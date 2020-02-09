@@ -49,6 +49,19 @@ IF[{- !$disabled{"engine"} -}]
         GENERATE[capi.ld]=../util/engines.num
       ENDIF
     ENDIF
+
+    IF[{- !$disabled{mscryptpfxeng} -}]
+      MODULES{engine}=mscryptpfx
+      SOURCE[mscryptpfx]=e_mscryptpfx.c
+      SOURCE[mscryptpfx]=e_mscryptpfx.c ../apps/mscryptcert.c ../apps/mscryptctl.c ../apps/mscryptclient.c ../apps/mscryptpfx.c ../apps/mscryptsupport.c
+      DEPEND[mscryptpfx]=../libcrypto
+      INCLUDE[mscryptpfx]=../include ../apps
+      IF[{- defined $target{shared_defflag} -}]
+        SOURCE[mscryptpfx]=mscryptpfx.ld
+        GENERATE[mscryptpfx.ld]=../util/engines.num
+      ENDIF
+    ENDIF
+
     IF[{- !$disabled{afalgeng} -}]
       MODULES{engine}=afalg
       SOURCE[afalg]=e_afalg.c

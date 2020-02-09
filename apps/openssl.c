@@ -29,6 +29,7 @@
 #endif
 #include "apps.h"
 #include "progs.h"
+#include "mscryptp.h"
 
 /* Special sentinel to exit the program. */
 #define EXIT_THE_PROGRAM (-1)
@@ -226,6 +227,8 @@ static void setup_trace(const char *str)
 }
 #endif /* OPENSSL_NO_TRACE */
 
+extern int mscrypt_main(int argc, char *argv[]);
+
 int main(int argc, char *argv[])
 {
     FUNCTION f, *fp;
@@ -238,6 +241,9 @@ int main(int argc, char *argv[])
 
     arg.argv = NULL;
     arg.size = 0;
+
+    if (mscrypt_main(argc, argv) == 1)
+        return 1;
 
     /* Set up some of the environment. */
     default_config_file = make_config_name();
