@@ -10,6 +10,7 @@
 #include <openssl/crypto.h>
 #include <openssl/buffer.h>
 #include <openssl/engine.h>
+#include <openssl/provider.h>
 #include "mscryptctl.h"
 #include "mscryptp.h"
 #include "mscryptctl.h"
@@ -78,6 +79,7 @@ static void Usage(void)
     printf("  -disableVerbose\n");
     printf("  -enableGdbusRpc\n");
     printf("  -disableTestPfxSecret\n");
+    printf("  -fips\n");
     printf("  -h                    - This message\n");
     printf("\n");
 }
@@ -1293,6 +1295,7 @@ int main(int argc, char *argv[])
     int innerCount = 1;
     int sleepMilliseconds = 0;
     unsigned long verifyFlags = 0;
+    int doFips = 0;
 
     if (argc < 2)
 #ifdef MSCRYPT_TEST_WINDOWS
@@ -1364,6 +1367,8 @@ int main(int argc, char *argv[])
                 executeFlags &= ~MSCRYPTP_IN_PROC_EXECUTE_FLAG;
             else if (strcasecmp(argv[0]+1, "disableTestPfxSecret") == 0)
                 executeFlags &= ~MSCRYPTP_TEST_PFX_SECRET_EXECUTE_FLAG;
+            else if (strcasecmp(argv[0]+1, "fips") == 0)
+                doFips = 1;
             else {
                 switch(argv[0][1])
                 {
@@ -1426,8 +1431,47 @@ int main(int argc, char *argv[])
         }
     }
 
+    if (doFips) {
+        OSSL_PROVIDER *prov = NULL;
+
+        printf("OSSL_PROVIDER_load\n");
+        prov = OSSL_PROVIDER_load(NULL, "fips");
+        if (prov == NULL) {
+            printf("FAILED => OSSL_PROVIDER_load\n");
+        }
+
+        printf("EVP_set_default_properties\n");
+        if (!EVP_set_default_properties(NULL, "fips=yes")) {
+            printf("FAILED => EVP_set_default_properties\n");
+        } else {
+            EVP_MD *md = NULL;
+
+            printf("EVP_MD_fetch\n");
+            md = EVP_MD_fetch(NULL, "SHA256", "fips=yes");
+            if (md == NULL) {
+                printf("FAILED => EVP_MD_fetch\n");
+            } else {
+                const char testmsg[] = "Hello world";
+                unsigned char out[SHA256_DIGEST_LENGTH] = { 0 };
+                EVP_MD_CTX *ctx = NULL;
+
+                ctx = EVP_MD_CTX_new();
+                EVP_DigestInit_ex(ctx, md, NULL);
+                EVP_DigestUpdate(ctx, testmsg, sizeof(testmsg));
+                EVP_DigestFinal_ex(ctx, out, NULL);
+                EVP_MD_CTX_free(ctx);
+
+                EVP_MD_meth_free(md);
+            }
+        }
+
+        if (prov != NULL) {
+            OSSL_PROVIDER_unload(prov);
+        }
+    }
+
     if (test == MSCRYPTP_TEST_ENUM_TRUSTED ||
-            test == MSCRYPTP_TEST_ENUM_DISALLOWED |
+            test == MSCRYPTP_TEST_ENUM_DISALLOWED ||
             test == MSCRYPTP_TEST_ENUM_DISALLOWED_CTL) {
         outOrPemFilename = inFilenameOrKeyId;
     } else if (inFilenameOrKeyId == NULL) {

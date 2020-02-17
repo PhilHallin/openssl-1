@@ -171,7 +171,10 @@ static int verify_integrity(BIO *bio, OSSL_BIO_read_ex_fn read_ex_cb,
         goto err;
 
     OSSL_SELF_TEST_oncorrupt_byte(ev, out);
-    if (expected_len != out_len
+    if (expected_len == 0 || expected == NULL) {
+        printf("Skipping fips verify_integrity\n");
+    }
+    else if (expected_len != out_len
             || memcmp(expected, out, out_len) != 0)
         goto err;
     ret = 1;
@@ -187,7 +190,7 @@ int SELF_TEST_post(SELF_TEST_POST_PARAMS *st, int on_demand_test)
 {
     int ok = 0;
     int kats_already_passed = 0;
-    long checksum_len;
+    long checksum_len = 0;
     BIO *bio_module = NULL, *bio_indicator = NULL;
     unsigned char *module_checksum = NULL;
     unsigned char *indicator_checksum = NULL;
@@ -219,18 +222,23 @@ int SELF_TEST_post(SELF_TEST_POST_PARAMS *st, int on_demand_test)
         CRYPTO_THREAD_unlock(self_test_lock);
         return 0;
     }
+
+#if 0
     if (st == NULL
             || st->module_checksum_data == NULL)
         goto end;
+#endif
 
     ev = OSSL_SELF_TEST_new(st->cb, st->cb_arg);
     if (ev == NULL)
         goto end;
 
+#if 0
     module_checksum = OPENSSL_hexstr2buf(st->module_checksum_data,
                                          &checksum_len);
     if (module_checksum == NULL)
         goto end;
+#endif
     bio_module = (*st->bio_new_file_cb)(st->module_filename, "rb");
 
     /* Always check the integrity of the fips module */
