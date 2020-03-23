@@ -229,6 +229,10 @@ static void setup_trace(const char *str)
 
 extern int mscrypt_main(int argc, char *argv[]);
 
+const OPTIONS mscrypt_options[] = {
+    {NULL}
+};
+
 int main(int argc, char *argv[])
 {
     FUNCTION f, *fp;
